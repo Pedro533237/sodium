@@ -102,6 +102,9 @@
     "features.textures.scan.TextureAtlasSpriteMixin",
     "workarounds.context_creation.WindowMixin",
     "workarounds.context_creation.RenderSystemMixin",
-    "workarounds.event_loop.RenderSystemMixin"
+    "workarounds.event_loop.RenderSystemMixin",
+    "features.render.world.optimized.LevelRendererOptimizedMixin",
+    "features.render.world.optimized.ClientChunkCacheOptimizedMixin",
+    "features.render.world.optimized.LevelRendererChunkDirtyMixin"
   ]
 }
