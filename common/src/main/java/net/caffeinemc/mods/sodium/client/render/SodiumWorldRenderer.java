@@ -12,6 +12,7 @@ import net.caffeinemc.mods.sodium.client.gl.device.CommandList;
 import net.caffeinemc.mods.sodium.client.gl.device.RenderDevice;
 import net.caffeinemc.mods.sodium.client.render.chunk.ChunkRenderMatrices;
 import net.caffeinemc.mods.sodium.client.render.chunk.RenderSectionManager;
+import net.caffeinemc.mods.sodium.client.render.chunk.experimental.ChunkRenderer;
 import net.caffeinemc.mods.sodium.client.render.chunk.lists.ChunkRenderList;
 import net.caffeinemc.mods.sodium.client.render.chunk.lists.SortedRenderLists;
 import net.caffeinemc.mods.sodium.client.render.chunk.map.ChunkTracker;
@@ -76,6 +77,8 @@ public class SodiumWorldRenderer {
     private boolean useEntityCulling;
 
     private RenderSectionManager renderSectionManager;
+    private ChunkRenderer experimentalChunkRenderer;
+    private final boolean experimentalPipelineEnabled = Boolean.getBoolean("sodium.experimental.massive_meshes");
 
     /**
      * @return The SodiumWorldRenderer based on the current dimension
@@ -136,6 +139,11 @@ public class SodiumWorldRenderer {
         if (this.renderSectionManager != null) {
             this.renderSectionManager.destroy();
             this.renderSectionManager = null;
+        }
+
+        if (this.experimentalChunkRenderer != null) {
+            this.experimentalChunkRenderer.destroy();
+            this.experimentalChunkRenderer = null;
         }
 
         this.level = null;
@@ -275,11 +283,41 @@ public class SodiumWorldRenderer {
      * Performs a render pass for the given {@link RenderType} and draws all visible chunks for it.
      */
     public void drawChunkLayer(ChunkSectionLayerGroup group, ChunkRenderMatrices matrices, double x, double y, double z) {
+        if (this.experimentalPipelineEnabled && group == ChunkSectionLayerGroup.OPAQUE && this.experimentalChunkRenderer != null) {
+            this.experimentalChunkRenderer.render(this.client.gameRenderer.getMainCamera());
+            return;
+        }
+
         if (group == ChunkSectionLayerGroup.OPAQUE) {
             this.renderSectionManager.renderLayer(matrices, DefaultTerrainRenderPasses.SOLID, x, y, z, this.lastFogParameters);
             this.renderSectionManager.renderLayer(matrices, DefaultTerrainRenderPasses.CUTOUT, x, y, z, this.lastFogParameters);
         } else if (group == ChunkSectionLayerGroup.TRANSLUCENT) {
             this.renderSectionManager.renderLayer(matrices, DefaultTerrainRenderPasses.TRANSLUCENT, x, y, z, this.lastFogParameters);
+        }
+    }
+
+
+    /**
+     * Atualiza cache da pipeline experimental para a área alterada.
+     */
+    public void scheduleExperimentalRebuildForBlockArea(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
+        if (this.experimentalChunkRenderer == null) {
+            return;
+        }
+
+        int minSectionX = SectionPos.posToSectionCoord(minX);
+        int minSectionY = SectionPos.posToSectionCoord(minY);
+        int minSectionZ = SectionPos.posToSectionCoord(minZ);
+        int maxSectionX = SectionPos.posToSectionCoord(maxX);
+        int maxSectionY = SectionPos.posToSectionCoord(maxY);
+        int maxSectionZ = SectionPos.posToSectionCoord(maxZ);
+
+        for (int sx = minSectionX; sx <= maxSectionX; sx++) {
+            for (int sy = minSectionY; sy <= maxSectionY; sy++) {
+                for (int sz = minSectionZ; sz <= maxSectionZ; sz++) {
+                    this.experimentalChunkRenderer.markSectionDirty(SectionPos.of(sx, sy, sz));
+                }
+            }
         }
     }
 
@@ -299,6 +337,11 @@ public class SodiumWorldRenderer {
             this.renderSectionManager = null;
         }
 
+        if (this.experimentalChunkRenderer != null) {
+            this.experimentalChunkRenderer.destroy();
+            this.experimentalChunkRenderer = null;
+        }
+
         // translucency sorting can be disabled in development environments by setting the debug option in the config file
         var sortBehavior = SortBehavior.DYNAMIC_DEFER_NEARBY_ZERO_FRAMES;
 
@@ -310,6 +353,10 @@ public class SodiumWorldRenderer {
         this.renderDistance = this.client.options.getEffectiveRenderDistance();
 
         this.renderSectionManager = new RenderSectionManager(this.level, this.renderDistance, sortBehavior, commandList);
+
+        if (this.experimentalPipelineEnabled) {
+            this.experimentalChunkRenderer = new ChunkRenderer(this.client);
+        }
 
         var tracker = ChunkTrackerHolder.get(this.level);
         ChunkTracker.forEachChunk(tracker.getReadyChunks(), this.renderSectionManager::onChunkAdded);

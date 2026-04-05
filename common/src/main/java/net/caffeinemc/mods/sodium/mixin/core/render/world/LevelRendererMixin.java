@@ -200,6 +200,7 @@ public abstract class LevelRendererMixin implements LevelRendererExtension {
     @Overwrite
     public void setBlocksDirty(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
         this.renderer.scheduleRebuildForBlockArea(minX, minY, minZ, maxX, maxY, maxZ, false);
+        this.renderer.scheduleExperimentalRebuildForBlockArea(minX, minY, minZ, maxX, maxY, maxZ);
     }
 
     /**
@@ -209,6 +210,7 @@ public abstract class LevelRendererMixin implements LevelRendererExtension {
     @Overwrite
     public void setSectionDirtyWithNeighbors(int x, int y, int z) {
         this.renderer.scheduleRebuildForChunks(x - 1, y - 1, z - 1, x + 1, y + 1, z + 1, false);
+        this.renderer.scheduleExperimentalRebuildForBlockArea((x - 1) << 4, (y - 1) << 4, (z - 1) << 4, ((x + 1) << 4) + 15, ((y + 1) << 4) + 15, ((z + 1) << 4) + 15);
     }
 
     /**
@@ -218,6 +220,7 @@ public abstract class LevelRendererMixin implements LevelRendererExtension {
     @Overwrite
     private void setBlockDirty(BlockPos pos, boolean important) {
         this.renderer.scheduleRebuildForBlockArea(pos.getX() - 1, pos.getY() - 1, pos.getZ() - 1, pos.getX() + 1, pos.getY() + 1, pos.getZ() + 1, important);
+        this.renderer.scheduleExperimentalRebuildForBlockArea(pos.getX() - 1, pos.getY() - 1, pos.getZ() - 1, pos.getX() + 1, pos.getY() + 1, pos.getZ() + 1);
     }
 
     /**
@@ -227,6 +230,7 @@ public abstract class LevelRendererMixin implements LevelRendererExtension {
     @Overwrite
     private void setSectionDirty(int x, int y, int z, boolean important) {
         this.renderer.scheduleRebuildForChunk(x, y, z, important);
+        this.renderer.scheduleExperimentalRebuildForBlockArea(x << 4, y << 4, z << 4, (x << 4) + 15, (y << 4) + 15, (z << 4) + 15);
     }
 
     /**
