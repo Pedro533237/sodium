@@ -8,7 +8,8 @@ import net.caffeinemc.mods.sodium.mixin.core.GpuDeviceAccessor;
 public enum DrawBackend {
     OPENGL,
     VK_MULTIDRAW,
-    VK_INDIRECT;
+    VK_INDIRECT,
+    VK_BASIC;
 
     public static final DrawBackend BACKEND = chooseBackend();
 
@@ -21,7 +22,9 @@ public enum DrawBackend {
             } else if (device.getDeviceInfo().features().multiDrawIndirect()) {
                 return DrawBackend.VK_INDIRECT;
             } else {
-                throw new IllegalStateException("Somehow, none of the multidraw backends are supported by this device.");
+                // Multi-draw and indirect draws are optional Vulkan features. A basic
+                // indexed draw is part of the core API and is the portable fallback.
+                return DrawBackend.VK_BASIC;
             }
         } else {
             return DrawBackend.OPENGL;
@@ -33,6 +36,7 @@ public enum DrawBackend {
             case OPENGL -> "gl_multidraw (sodium)";
             case VK_MULTIDRAW -> "ext_multidraw (sodium)";
             case VK_INDIRECT -> "indirect (sodium)";
+            case VK_BASIC -> "vulkan_basic (sodium)";
         };
     }
 }
