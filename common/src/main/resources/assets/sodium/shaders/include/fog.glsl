@@ -2,13 +2,8 @@ const int FOG_SHAPE_SPHERICAL = 0;
 const int FOG_SHAPE_CYLINDRICAL = 1;
 
 float linear_fog_value(float vertexDistance, float fogStart, float fogEnd) {
-    if (vertexDistance <= fogStart) {
-        return 0.0;
-    } else if (vertexDistance >= fogEnd) {
-        return 1.0;
-    }
-
-    return (vertexDistance - fogStart) / (fogEnd - fogStart);
+    // branchless: 0 below fogStart, 1 above fogEnd, linear in between
+    return clamp((vertexDistance - fogStart) / max(fogEnd - fogStart, 1.0e-5), 0.0, 1.0);
 }
 
 float total_fog_value(float sphericalVertexDistance, float cylindricalVertexDistance, float environmentalStart, float environmantalEnd, float renderDistanceStart, float renderDistanceEnd) {

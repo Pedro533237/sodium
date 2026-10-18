@@ -52,14 +52,13 @@ void main() {
 
     int chunkId = int(_draw_id);
     int chunkFade = texelFetch(u_SectionTimeInfo, int((u_RegionID * 256u) + uint(chunkId))).r;
-    int fadeTime = u_CurrentTime - chunkFade;
-    float elapsed = float(fadeTime);
     float fade = clamp(float(u_CurrentTime - chunkFade) * u_FadePeriodInv, 0.0, 1.0);
     fadeFactor = (chunkFade < 0) ? 1.0 : fade;
 #endif
 
     // Transform the vertex position into model-view-projection space
-    gl_Position = u_ProjectionMatrix * u_ModelViewMatrix * vec4(position, 1.0);
+    // (two mat4*vec4 instead of mat4*mat4 + mat4*vec4)
+    gl_Position = u_ProjectionMatrix * (u_ModelViewMatrix * vec4(position, 1.0));
 
     // Add the light color to the vertex color, and pass the texture coordinates to the fragment shader
 #ifndef OIT_ALPHA_ONLY

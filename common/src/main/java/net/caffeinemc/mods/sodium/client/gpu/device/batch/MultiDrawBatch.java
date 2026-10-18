@@ -36,6 +36,14 @@ public abstract class MultiDrawBatch {
 
     public abstract void put(int size, int elementCount, int baseVertex, long elementOffset);
 
+    /**
+     * Attempts to append the given draw to the previously written command instead of emitting a new one.
+     * Only valid for draws that share one index buffer layout (same element offset). Returns true on success.
+     */
+    public boolean tryExtendLast(int size, int elementCount, int baseVertex, long elementOffset) {
+        return false;
+    }
+
     public abstract void draw(DrawContext drawContext);
 
     public abstract void delete();

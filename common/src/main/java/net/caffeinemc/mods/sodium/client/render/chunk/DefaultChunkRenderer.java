@@ -312,9 +312,15 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
                         continue;
                     }
 
-                    batch.put(size, UInt32.uncheckedDowncast((groupVertexCount >> 2) * 6), UInt32.uncheckedDowncast(baseVertex), elementOffsetBytes);
+                    final int elementCount = UInt32.uncheckedDowncast((groupVertexCount >> 2) * 6);
+                    final int groupBaseVertex = UInt32.uncheckedDowncast(baseVertex);
 
-                    size++;
+                    // Fewer draw commands means less per-draw driver overhead, so adjacent ranges are merged.
+                    if (!batch.tryExtendLast(size, elementCount, groupBaseVertex, elementOffsetBytes)) {
+                        batch.put(size, elementCount, groupBaseVertex, elementOffsetBytes);
+                        size++;
+                    }
+
                     baseVertex += groupVertexCount;
                     groupVertexCount = 0;
                 }

@@ -31,6 +31,29 @@ public final class GLDrawBatch extends MultiDrawBatch {
     }
 
     @Override
+    public boolean tryExtendLast(int size, int elementCount, int baseVertex, long elementOffset) {
+        if (size <= 0) {
+            return false;
+        }
+
+        final long last = size - 1;
+        final int lastCount = MemoryIntrinsics.getInt(this.pElementCount + (last << 2));
+        final int lastBase = MemoryIntrinsics.getInt(this.pBaseVertex + (last << 2));
+        final long lastOffset = MemoryIntrinsics.getAddress(this.pElementPointer + (last << Pointer.POINTER_SHIFT));
+
+        // Same index data, and the new vertex range starts exactly where the previous one ended
+        // (6 indices per 4 vertices).
+        if (lastOffset != (elementOffset << 2) || lastBase + (lastCount / 6) * 4 != baseVertex) {
+            return false;
+        }
+
+        final int merged = lastCount + elementCount;
+        MemoryIntrinsics.putInt(this.pElementCount + (last << 2), merged);
+        this.updateMaxElementCount(merged);
+        return true;
+    }
+
+    @Override
     public void draw(DrawContext context) {
         context.getPass().multiDrawIndexed(MemoryUtil.memPointerBuffer(this.pElementPointer, this.size),
                 MemoryUtil.memIntBuffer(this.pElementCount, this.size),
